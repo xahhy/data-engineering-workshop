@@ -32,11 +32,14 @@ object WordCount {
     spark.read
       .text(inputPath)  // Read file
       .as[String] // As a data set
+      .flatMap(line=>line.toLowerCase().split("\\W+"))
+      .map(word=>(word.trim(), 1))
+      .groupByKey(_._1)
+      .count()
       .write
       .option("quoteAll", false)
       .option("quote", " ")
       .csv(outputPath)
-
     log.info("Application Done: " + spark.sparkContext.appName)
   }
 }
