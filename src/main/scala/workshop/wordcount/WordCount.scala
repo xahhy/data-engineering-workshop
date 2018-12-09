@@ -36,14 +36,35 @@ object WordCount {
     val fullInfo = orderInfo
       .join(itemInfo, "SKU_ID")
 
+    val perProductPerMonthDF = fullInfo
+      .groupBy("NAME", "MONTH")
+      .agg(sum("AMOUNT") as "total")
+      .withColumn("SIZE", lit("ALL"))
+      .orderBy("NAME", "MONTH")
 
-    fullInfo.groupBy("NAME", "MONTH")
-      .agg(sum("AMOUNT") as "total" )
-        .orderBy("NAME","MONTH")
-        .show(10)
+    val allProductPerMonthDF = fullInfo
+      .groupBy("MONTH")
+      .agg(sum("AMOUNT") as "total")
+      .withColumn("SIZE", lit("ALL"))
+      .withColumn("NAME", lit("ALL"))
 
+    val allMonthPerProductDF = fullInfo
+      .groupBy("NAME")
+      .agg(sum("AMOUNT") as "total")
+      .withColumn("SIZE", lit("ALL"))
+      .withColumn("MONTH", lit("ALL"))
 
-//    fullInfo.write
-//      .csv(outputPath)
+    val allSizePerMonthDF = fullInfo
+      .groupBy("SIZE")
+      .agg(sum("AMOUNT") as "total")
+      .withColumn("MONTH", lit("ALL"))
+      .withColumn("NAME", lit("ALL"))
+
+    val resultDF = allMonthPerProductDF
+      .unionByName(allProductPerMonthDF)
+      .unionByName(allSizePerMonthDF)
+      .orderBy("NAME", "MONTH","SIZE")
+
+    resultDF.write.csv(outputPath)
   }
 }
